@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+/* set the CSS */
+
+	.line {
+	  fill: none;
+	  stroke: steelblue;
+	  stroke-width: 2px;
+	}
+
+	.line_f {
+	  fill: none;
+	  stroke: steelblue;
+	  stroke-width: 6px;
+	}
+
+	.lines{
+		stroke:steelblue;
+		stroke-width:1px;
+	}
+
+	.labels{
+		width:10px;
+		word-wrap: break-word;
+	}
+
+	.node {
+		fill:white;
+		stroke:steelblue;
+		stroke-width: 2px;
+	}
+
+	.ldivs{
+		background:white;
+	}
+
+	#form{
+		width:300px;
+		height:97%;
+		font-size:11px;
+		font-family:sans-serif;
+		float:left;
+		background:#F8F8F8;
+		margin:5px;
+		padding:5px;
+	}
+	.formdiv {
+		float:left;
+		margin-bottom:10px;
+	}
+	#header{
+		font-size:14px;
+		font-family:sans-serif;
+		color:steelblue;
+		margin-top:5px;
+		margin-left:5px;
+	}
+	#vis {
+		float:left;
+		width:670px;
+		margin:5px;
+	}
+	#container {
+		width: 1000px;
+		height: 625px;
+		float:left;
+		border: 1px solid #ccc;
+	}
+	#filter{
+		float:left;
+		margin-bottom:5px;
+		background:#F8F8F8;
+	}
+
+	#timeline{
+		float:left;
+		background:#F8F8F8;
+	}
+
+	.lableLine{
+		stroke-width:1px;
+		stroke:grey;
+	
+	}
+	#note{
+		float:left;
+		width:670px;
+		height:390px;
+		margin:5px;
+		word-wrap: break-word;
+	}
+
+	#note.text{
+		padding:10px;
+	}
+
+	.flheader{
+		background:#64acdd;
+		padding:2px;
+	}
+	.flnote {
+		width:600px;
+		height:300px;
+		padding:5px;
+	}
+	.flnote_div {
+		float:left;
+		position:absolute;
+		background:white;
+		width:600px;
+		height:300px;
+		padding:5px;
+		font-size:11px;
+		font-family:sans-serif;
+		color:black;
+	}
+	.dates:hover{
+		cursor:pointer;
+	}
+
+	.keywords:hover{
+		cursor:pointer;
+	}
+	.imgIcon{
+		padding:1px;
+		border:1px solid #021a40;
+		background-color:#ff0;
+	}
+
+	.imgIcon:hover{
+		cursor:pointer;
+	}
+
+	.imgIconRect{
+		stroke:steelblue;
+		stroke-width:0.5px;
+		fill:none;
+	}
+
+
+	#newproject{
+		float:left;
+		font-size:11px;
+		font-family:sans-serif;
+		color:black;
+	}
+
+
+
+</style>
+<html>
+<head>
+<title> submit fieldnote </title>
+</head>
+
+<script src="https://d3plus.org/js/d3plus-text.v0.9.full.min.js"></script>
+
+<body>	
+<div id="header"><h3> FIELD NOTES </h3>	
+
+<div id="newproject">
+	<select id=projects></select>
+	<form action="/newproj" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="pid" id="pid" value="">
+		<label for="name">create new project</label>
+        <input type="text" name="name">
+        <input type="submit" value="submit" />
+        </form>
+</div>
+</div>
+
+<div id="container">
+<div id="form">
+<form action="/submit" method="post" enctype="multipart/form-data">
+<div class="formdiv">  timestamp:
+  <input type="timestamp" id="tmstmp" name="timestmp" value=""><br>
+fieldnote:<br><textarea id="fieldnote" name="fieldnote" rows="20" cols="35"></textarea><br>
+</div>
+<div class="formdiv">
+artifact:
+  <input type="file" name="upload" id="upload" multiple><br><br>
+ </div>
+ <div class="formdiv"> 
+keywords:<input type="text" name="keywords"><br>
+tag:<input type="text" name="tag"><br>
+<input type="hidden" name="projID" id="projID" value=""><br><br>	 
+<input type="submit" value="Submit"><br>
+</form>
+</div>
+</div>
+<div id="vis">
+	<div id="filter"></div>
+	<div id="timeline"></div>
+</div>
+<div id="note"></div>
+</div>
+
+
+<!-- load the d3.js library -->    	
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+
+<script>
+	
+	var dropdown = d3.select("#projects");	
+	var php_selection = "<?php echo $_GET['selection']; ?>";
+	if(!php_selection){php_selection=1;};
+	var select_ID;
+	//console.log(selection);
+	//.attr("id","projects");
+	
+	/*<select id="inds">
+		<option value="apples" selected="selected">apples</option>
+		<option value="pears">pears</option>
+		<option value="tomatoes">tomatoes</option>
+</select>*/	
+
+//var wrap = d3.textwrap().bounds({height:380, width:600});
+
+//var textwrap = require("./src/textwrap.js");
+
+// set the dimensions and margins of the graph
+var margin = {top: 40, right: 30, bottom: 20, left: 20},
+    width = 670 - margin.left - margin.right,
+    height = 175 - margin.top - margin.bottom;
+
+var margin_f = {top: 5, right: 30, bottom: 20, left: 20},
+    height_f = 50 - margin_f.top - margin_f.bottom;	
+
+// parse the date / time
+var parseTime = d3.timeParse("%d-%b-%y");
+
+// set the ranges
+var x = d3.scaleTime().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
+
+var xf = d3.scaleLinear().range([0, width])
+var yf = d3.scaleLinear().range([height_f, 0]);
+
+var ypos = 0;
+// define the line
+var valueline = d3.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(height/2); });
+
+var filter = d3.select("#filter").append("svg")
+    .attr("width", width + margin_f.left + margin_f.right)
+    .attr("height", height_f + margin_f.top + margin_f.bottom)
+ 	.append("g")
+    .attr("transform",
+          "translate(" + margin_f.left + "," + margin_f.top + ")");  
+
+
+// append the svg obgect to the body of the page
+// appends a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("#timeline").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+  var note = d3.select("#note").append("div")
+		  .attr("width",670)
+		  .attr("height",500);
+		  
+		  var data_all_dates;
+		  var data_all;
+		  var data;
+		  var data_sel;	  
+		  
+		  		  
+//d3.json("data3.php", function(error, alldata) {
+//d3.json("notes.json", function(error, alldata) {
+//		    if (error) throw error; 
+
+			
+			//console.log(projects);
+		    // format the data
+			data = <%-JSON.stringify(fieldnotes)%>;//alldata[0];
+			var projects = <%- JSON.stringify(projects) %>;
+			d3.select("#pid").property("value",projects.length+1)
+			
+			//Console.log(data);
+			
+			var tmstmp = <%- JSON.stringify(timestmp) %>;
+			//console.log(tmstmp);
+			
+			
+			
+			//var projects = //alldata[1];
+			
+			//var parseTime = d3.timeParse("%Y-%m-%d %H:%M:%S");
+			
+			var parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
+			
+			var ptime = parseTime(tmstmp);
+			d3.select("#tmstmp").property("value",tmstmp);
+			
+		    data.forEach(function(d,i) {
+		        d.date = parseTime(d.timestmp);
+		        d.close = 100;
+				d.ind = i;
+		    });	
+			
+			 var projs = d3.nest()
+			.key(function(d){return d.projectID;})
+			.sortKeys(d3.ascending)
+			.entries(data);
+			
+			
+			
+			//console.log(projs);
+			
+			data_all = data;	
+			
+			//console.log(data);	  
+			//console.log(projects);	  
+
+  //populate menu with projects
+			dropdown.selectAll("options")
+			.data(projects)
+			.enter()
+			.append("option")
+			.attr("value",function(d){return d.id;})
+			.property("selected",function(d){ return d.id==php_selection;})
+			.text(function(d){return d.name;});	
+			
+			dropdown.on("change",function(){
+				sel = document.getElementById('projects');
+				selection = sel.options[sel.selectedIndex].value;
+				document.cookie = "selection="+selection+"";
+				//console.log("changed to: "+selection);
+				data = data_all.filter(function(d){ return d.projectID==selection;});
+				data_all_dates = data;
+				//console.log(data_all);
+				console.log(selection);
+				d3.select("#projID").property("value",selection);
+				console.log(data);
+				initTimeline();
+				initText();
+				//drawtimeline();
+			});	
+			
+			if(php_selection!=null){
+				
+			}
+			
+			var sel = document.getElementById('projects');
+			var selection = sel.options[sel.selectedIndex].value;
+			d3.select("#projID").property("value",selection);
+			//console.log(data_all);
+			data = data_all.filter(function(d){ return d.projectID==selection;});
+			data_all_dates = data;
+			initTimeline();
+			initText();
+			
+			//set form value
+			document.cookie = "selection="+selection+"";
+  
+ 
+function initTimeline(){// Scale the range of the data
+ 
+  //clear everything 
+	filter.selectAll("g").remove();
+  
+  x.domain(d3.extent(data, function(d) { return d.date; }));
+  y.domain([0, d3.max(data, function(d) { return d.close; })]);
+  
+  
+  xf.domain(d3.extent(data, function(d) { return d.date; }));
+  yf.domain([0, d3.max(data, function(d) { return d.close; })]);
+
+filter.append("g")
+    .attr("transform", "translate(0," + height_f + ")")
+    .call(d3.axisBottom(x)
+	.ticks(5)
+	. tickFormat(d3.timeFormat("%b %y")));
+
+/////brush filter - from https://bl.ocks.org/Fil/2d43867ba1f36a05459c7113c7f6f98a ////
+var brush = d3.brushX()
+    .extent([[0, 0], [width, height_f]])
+    .on("start brush end", brushmoved);	
+
+var ticks = filter.append("g")
+	.attr("class","lines")
+	.selectAll("line")
+	.data(data)
+	.enter().append("line")
+	.attr("x1",function(d){return xf(d.date);})
+	.attr("y1", 0)
+	.attr("x2",function(d){return xf(d.date);})
+	.attr("y2", height_f);
+	
+var gBrush = filter.append("g")
+    .attr("class", "brush")
+    .call(brush);
+	
+	
+	// style brush resize handle
+	// https://github.com/crossfilter/crossfilter/blob/gh-pages/index.html#L466
+	var brushResizePath = function(d) {
+	    var e = +(d.type == "e"),
+	        x = e ? 1 : -1,
+	        y = height_f / 2;
+	    return "M" + (.5 * x) + "," + y + "A6,6 0 0 " + e + " " + (6.5 * x) + "," + (y + 6) + "V" + (2 * y - 6) + "A6,6 0 0 " + e + " " + (.5 * x) + "," + (2 * y) + "Z" + "M" + (2.5 * x) + "," + (y + 8) + "V" + (2 * y - 8) + "M" + (4.5 * x) + "," + (y + 8) + "V" + (2 * y - 8);
+	}
+
+	var handle = gBrush.selectAll(".handle--custom")
+	  .data([{type: "w"}, {type: "e"}])
+	  .enter().append("path")
+	    .attr("class", "handle--custom")
+	    .attr("stroke", "#000")
+	    .attr("cursor", "ew-resize")
+	    .attr("d", brushResizePath);
+
+gBrush.call(brush.move, [0,width]);	
+
+		  function brushmoved() {
+		    var s = d3.event.selection;
+		    if (s == null) {
+		      handle.attr("display", "none");
+		      //circle.classed("active", false);
+		    } else {
+		      var sx = s.map(xf.invert);
+		      handle.attr("display", null).attr("transform", function(d, i) { return "translate(" + [ s[i], - height_f / 4] + ")"; });
+			  data = data_all_dates;
+			  data = data.filter(function(d){return (d.date >= sx[0] && d.date <= sx[1]);});
+			  x.domain(d3.extent(data,function(d){return d.date;})); 
+			}
+			drawtimeline();
+		  }
+/////////end brush filter///////////////////////
+	  }
+  
+
+  // Add the valueline path.
+  
+		  //drawtimeline();  
+  
+function drawtimeline(){
+	
+	//x.domain([d3.min(data,function(d){return d.date;}) , d3.max(data,function(d){return d.date;})]);
+	
+  svg.selectAll("*").remove();
+	
+  svg.append("path")
+      .data([data])
+      .attr("class", "line")
+      .attr("d", valueline);	  
+	  
+  svg.selectAll("circle")
+	  .data(data)
+	  .enter().append("circle")
+	  .attr("class","node")
+	  .attr("r",4)
+	  .attr("cx",function(d){return x(d.date);})
+	  .attr("cy",function(d){return y(height/2);})
+	  .attr("id",function(d,i){return "flnode"+d.ind;})
+	  .on("mouseover", mouseOverNode)
+	  .on("mouseout", mouseOutNode)
+	  .on("click", mouseClickNode);
+
+	 var formatDate = d3.timeFormat("%-m/%-e");
+	 
+	 var labels = svg.selectAll("g")
+	 	.data(data)
+	 	.enter()
+	 	.append("g")
+	 	.attr("class","labels");
+		
+	labels.append("rect")
+		.attr("class","keywordRects")
+		.attr("fill","#F8F8F8")
+		.attr("x",function(d){return x(d.date)-5;})
+		.attr("y", function(d,i){ 
+			var t = Math.floor(i/2)%4;
+			if(i%2==0){return y(height/2)+20+t*10;}else{return y(height/2)-33-t*10;}
+		});	
+				
+		
+	labels.append("text")
+	   	.text(function(d) {return formatDate(new Date(""+d.date+""));})
+	   	.attr("x", function(d){return x(d.date)-5;})
+	   	.attr("y", function(d,i){ 
+			var t = Math.floor(i/2)%4;
+			if(i%2==0){return y(height/2)+30+t*10;}else{return y(height/2)-25-t*10;}
+		})
+	   	.attr("font-family", "sans-serif")
+	   	.attr("font-size", "9px")
+		.attr("class","dates")
+	   	.attr("fill", "black")
+		.on("mouseover",function(d){d3.select("#flnode"+d.ind).dispatch("mouseover");})
+  	  	.on("mouseout",function(d){d3.select("#flnode"+d.ind).dispatch("mouseout");})
+  	  	.on("click",function(d){d3.select("#flnode"+d.ind).dispatch("click");});
+		
+	labels.selectAll(".dates").each(function(d,i){
+		d.dbb = this.getBBox();
+	});	
+		
+		
+labels.append("line")
+	.attr("class","lableLine")
+	.attr("x1",function(d){return x(d.date);})
+	.attr("y1", function(d,i){if(i%2==0){return y(height/2)+5;}else{return y(height/2)-5;}})
+	.attr("x2",function(d){return x(d.date);})
+	.attr("y2", function(d,i){
+		var t = Math.floor(i/2)%4;
+		if(i%2==0){return y(height/2)+22+t*10;}else{return y(height/2)-22-t*10;}
+	});		
+	
+		
+	labels.append("image")
+.attr("xlink:href",function(d){return "./"+d.upload_path;})
+	.attr("width",function(d){if(d.upload!=""){return 20;}else{return 0;}})
+	.attr("height",function(d){if(d.upload!=""){var s = d.imgW/20; return d.imgH/s;}else{return 0;}})
+	.attr("transform",function(d,i){
+		var t = Math.floor(i/2)%4;
+		var xx = x(d.date)-7.5;
+		var yy = 0;
+		if(i%2==0){yy = y(height/2)+32+t*10;}else{yy = y(height/2)-50-t*10;}
+		
+		return "translate("+xx+","+yy+")";
+	})
+	.attr("class","imgIcon")
+	.on("mouseover",function(d){d3.select("#flnode"+d.ind).dispatch("mouseover");})
+  	.on("mouseout",function(d){d3.select("#flnode"+d.ind).dispatch("mouseout");})
+  	.on("click",function(d){d3.select("#flnode"+d.ind).dispatch("click");});
+	
+	
+	labels.append("rect")
+	.attr("class","imgIconRect")
+	.attr("width",function(d){if(d.upload!=""){return 20;}else{return 0;}})
+	.attr("height",function(d){if(d.upload!=""){var s = d.imgW/20; return d.imgH/s;}else{return 0;}})
+	.attr("transform",function(d,i){
+		var t = Math.floor(i/2)%4;
+		var xx = x(d.date)-7.5;
+		var yy = 0;
+		if(i%2==0){yy = y(height/2)+32+t*10;}else{yy = y(height/2)-50-t*10;}
+		
+		return "translate("+xx+","+yy+")";
+	});
+	
+		
+	labels.append("text")
+	   	.attr("x", function(d){return x(d.date)+d.dbb.width-3;})
+	   	.attr("y", function(d,i){ 
+			var t = Math.floor(i/2)%4;
+			//if(i%2==0){return y(height/2)+40+t*10;}else{return y(height/2)-40-t*10;}
+			if(i%2==0){return y(height/2)+30+t*10;}else{return y(height/2)-25-t*10;}
+		})
+		//.attr("transform",function(d){return "translate("+x(d.date)-5+"0)";})
+		.attr("font-family", "sans-serif")
+	   	.attr("font-size", "9px")
+	   	.attr("fill", "black")
+		.attr("class","keywords")
+		.text(function(d) {return d.keywords;})
+		.on("mouseover",function(d){d3.select("#flnode"+d.ind).dispatch("mouseover");})
+  	  	.on("mouseout",function(d){d3.select("#flnode"+d.ind).dispatch("mouseout");})
+  	  	.on("click",function(d){d3.select("#flnode"+d.ind).dispatch("click");});
+		
+		labels.selectAll(".keywords").each(function(d,i){
+			//console.log(this.getBBox());
+			//console.log(d.keywords);
+			d.bb = this.getBBox();
+		});
+		
+		
+		labels.selectAll(".keywordRects")
+			.attr("width",function(d){if(d.bb!=undefined){return d.bb.width+d.dbb.width;}else{return 0;}})
+		.attr("height",function(d){if(d.bb!=undefined){return d.bb.height;}else{return 0;}});
+		
+		
+		//.call(wrapLabel,200);
+	  //labels.append(svg)	
+		
+	}
+	
+function initText(){
+  note.selectAll("*").remove();	
+	
+  var noteText = note.selectAll("div")
+		.data(data)
+		.enter()
+		.append("div")
+  		.attr("class", "flnote_div")
+  .attr("id",function(d,i){return "flnote"+d.ind;})
+  .attr("overflow","scroll")
+  		.attr("selected",0)
+		.style("opacity",0); 		
+	  	  
+ noteText.append("text")
+	  .attr("id",function(d,i){return "date"+i;})
+  .attr("class", "flheader")
+  .html(function(d){return "Date: "+d.date;})
+   	  .attr("x",10)
+  .attr("y",20)
+  .attr("font-family", "sans-serif")
+   	  .attr("font-size", "11px")
+   	  .attr("fill", "black");  
+	  
+	  
+	  noteText.append("text")
+	  .html(function(d){return "keywords: "+d.keywords;})
+	  .attr("class", "flnote")
+	 // .attr("x",400)
+	 // .attr("y",20)
+	  .attr("font-family", "sans-serif")
+	  .attr("font-size", "11px")
+	  .attr("fill", "black");
+	  
+	  
+	 noteText.append("text")  
+	  .attr("id",function(d,i){return "note"+i;})
+	  .attr("class","flnotetxt")	  
+	  //.attr("x",10)
+	  //.attr("y",10)
+	  .attr("font-family", "sans-serif")
+	  .attr("font-size", "11px")
+	  .attr("fill", "black")
+	  .style("overflow","hidden")
+	  .html(function(d){var str = d.fieldnote;/*.replace(/<br \/>/,"\n");*/ return "<br><br>"+str;});
+	  //.html("yes please");
+		  //.call(wrap,500);	  
+  
+  /*noteText.append("text")
+  .text(function(d){return "artifact: "+d.upload;})
+   	  .attr("x",10)
+  .attr("y",200)
+  .attr("font-family", "sans-serif")
+   	  .attr("font-size", "11px")
+   	  .attr("fill", "black");*/
+  
+  
+  /*noteText.append("text")
+  .html(function(d){return "<br> artifact notes: "+d.upload_annotation;})
+  //.attr("x",10)
+  //.attr("y",30)
+  .attr("font-family", "sans-serif")
+   	  .attr("font-size", "11px")
+   	  .attr("fill", "black");*/
+  
+  var nw = 650;
+  var nh = 500;
+  
+  var notesvg = noteText.append("svg")
+  .attr("width",function(d){if(d.upload!=""){return nw;}else{return 0;}})
+  .attr("height",function(d){if(d.upload!=""){return nh;}else{return 0;}});
+  
+  notesvg.append("image")
+  .attr("xlink:href",function(d){if(d.upload!=""){return "./"+d.upload_path;}})
+  .attr("width",function(d){if(d.upload!=""){ var s = d.imgW/nw; return d.imgW/s;}else{return 0;}})
+  .attr("height",function(d){if(d.upload!=""){var s = d.imgW/nw; return d.imgH/s;}else{return 0;}});
+  	  
+	}
+	
+  function mouseOverNode(d,i){
+	  d3.select(this).attr("r",6).attr();
+	  d3.select("#flnote"+d.ind).style("opacity",1);
+	  
+  }
+  
+  function mouseOutNode(d,i){	  
+	  if(d3.select("#flnote"+d.ind).attr("selected")!=1){
+	  d3.select(this).attr("r",4);
+	  d3.select("#flnote"+d.ind).style("opacity",0);
+  	  }
+  }
+  
+  function mouseClickNode(d,i){
+	  if(select_ID!=null && select_ID!=d.ind){
+		  d3.select("#flnote"+select_ID).attr("selected",0);
+		  d3.select('#flnode'+select_ID).dispatch("mouseout");
+		  d3.select("#flnote"+select_ID).style("opacity",0);
+	  	}
+	  select_ID = d.ind;
+	  var tf = d3.select("#flnote"+d.ind).attr("selected");
+	  if(tf==0){
+	  	d3.select("#flnote"+d.ind).attr("selected",1);
+		d3.select(this).attr("r",6).attr();
+		d3.select("#flnote"+d.ind).style("opacity",1);
+	  }else{
+	  	d3.select("#flnote"+d.ind).attr("selected",0);
+		d3.select(this).attr("r",4).attr();
+		d3.select("#flnote"+d.ind).style("opacity",1);
+	  }
+  }
+  
+  
+  function wrapLabel(text,width) {
+		text.each(function(){
+			var text = d3.select(this),
+	        words = text.text().split(/\s+/).reverse(),
+	        word,
+	        line = [],
+	        lineNumber = 0,
+	        lineHeight = 1.1, // ems
+	        y = text.attr("y"),
+			x = text.attr("x"),
+	        dy = 8;//parseFloat(text.attr("dy")),
+	        tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em");
+			
+			//console.log(words);
+			
+			while (word = words.pop()) {
+			      line.push(word);
+			      tspan.text(line.join(" "));
+			      if (tspan.node().getComputedTextLength() > width) {
+			        line.pop();
+			        tspan.text(line.join(" "));
+			        line = [word];
+			        tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+			      }
+			    }
+			//console.log(tspan);
+			
+		});
+        }
+  
+  function wrap(text,width) {
+		text.each(function(){
+			var text = d3.select(this),
+	        words = text.text().split(/\s+/).reverse(),
+	        word,
+	        line = [],
+	        lineNumber = 0,
+	        lineHeight = 1.1, // ems
+	        y = text.attr("y"),
+			x = text.attr("x"),
+	        dy = 8;//parseFloat(text.attr("dy")),
+	        tspan = text.text(null).append("tspan").attr("x", 0).attr("y", y).attr("dy", dy + "em");
+			
+			while (word = words.pop()) {
+			      line.push(word);
+			      tspan.text(line.join(" "));
+			      if (tspan.node().getComputedTextLength() > width) {
+			        line.pop();
+			        tspan.text(line.join(" "));
+			        line = [word];
+			        tspan = text.append("tspan").attr("x", 0).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+			      }
+			    }
+			
+		});
+        }
+
+//});
+
+</script>
+</body>
+</html>

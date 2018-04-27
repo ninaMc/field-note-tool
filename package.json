@@ -1,0 +1,26 @@
+{
+  "name": "d3-timeline-tool",
+  "description": "",
+  "version": "",
+  "private": true,
+  "main": "app.js",
+  "engines": {
+    "node": "8.11.1"
+  },
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+      "ejs": "^2.5.9",
+      "express": "^4.16.3",
+      "mysql": "^2.15.0",
+	  "path":"^0.12.7",
+	  "express-timestamp":"^0.1.4",
+	  "multer":"^1.3.0",
+	  "image-size":"^0.6.2"
+  },
+  "repository": {
+    "type": "",
+    "url": ""
+  }
+}
