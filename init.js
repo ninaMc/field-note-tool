@@ -24,8 +24,9 @@ connection.connect(function(err) {
 	  connection.query(sql_projects, function (err, result) {
 	    if (err) throw err;
 	    console.log("projects table created");
-	  });
-	  var sql_fieldnotes = "CREATE TABLE IF NOT EXISTS _fieldnotes (timestmp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, fieldnote TEXT, upload VARCHAR(256) NOT NULL, upload_path VARCHAR(500) NOT NULL, upload_type VARCHAR(500) NOT NULL, imgW INT(100) NOT NULL, imgH INT(100) NOT NULL, keywords TEXT NOT NULL, projectID INT(11) NOT NULL, tag INT(11) NOT NULL)";
+	  });  
+	  
+	  var sql_fieldnotes = "CREATE TABLE IF NOT EXISTS _fieldnotes (timestmp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, fieldnote TEXT, upload VARCHAR(2000) NOT NULL, upload_path VARCHAR(500) NOT NULL, upload_type VARCHAR(500) NOT NULL, imgW VARCHAR(256) NOT NULL, imgH VARCHAR(256) NOT NULL, keywords TEXT NOT NULL, projectID INT(11) NOT NULL, tag INT(11) NOT NULL)";
   	  connection.query(sql_fieldnotes, function (err, result) {
   	    if (err) throw err;
   	    console.log("fieldnotes table created");
@@ -42,7 +43,7 @@ connection.connect(function(err) {
 		console.log("added sample project");
 	  });
 	  
-	  connection.query("INSERT INTO `_fieldnotes` (`timestmp`, `fieldnote`, `upload`, `upload_path`, `upload_type`, `imgW`, `imgH`, `keywords`, `projectID`, `tag`) VALUES ('2017-04-27 18:19:29', 'Beginning the project!', '', '', '', 0, 0, 'start date!', 1, 0),('2017-10-27 18:20:06', 'something super interesting that we realized as a result of a workshop that we conducted...', '', '', '', 0, 0, 'major insight!', 1, 0),('2017-11-20 18:41:43', 'dog!', 'dog.jpg', 'files/dog.jpg', '', 5760, 3840, 'dog', 1, 0),('2018-04-27 18:19:29', 'Ending the project!', '', '', '', 0, 0, 'end date!', 1, 0)",function(err,result){
+	  connection.query("INSERT INTO `_fieldnotes` (`timestmp`, `fieldnote`, `upload`, `upload_path`, `upload_type`, `imgW`, `imgH`, `keywords`, `projectID`, `tag`) VALUES ('2017-04-28 00:19:29', 'Beginning the project!', '[]', '[]', '[]', '[]', '[]', 'start date!', 1, 0),('2017-10-28 00:20:06', 'something super interesting that we realized as a result of a workshop that we conducted...', '[]', '[]', '[]', '[]', '[]', 'major insight!', 1, 0),('2017-11-21 01:41:43', 'dog!', '[{\"name\":\"dog.jpg\", \"path\":\"files/dog.jpg\", \"type\":\"image/jpeg\", \"imgW\":5760, \"imgH\":3840}]', '[\"files/dog.jpg\"]', '[\"image/jpeg\"]', '[5760]', '[3840]', 'dog', 1, 0), ('2018-04-28 00:19:29', 'Ending the project!', '[]', '[]', '[]', '[]', '[]', 'end date!', 1, 0)",function(err,result){
 	  	if (err) throw err;
 		console.log("added sample fieldnotes");
 	  });

@@ -204,7 +204,7 @@ tag:<input type="text" name="tag"><br>
 <script>
 	
 	var dropdown = d3.select("#projects");	
-	var php_selection = "<?php echo $_GET['selection']; ?>";
+	var php_selection = <%- JSON.stringify(projectID) %>;//"<?php echo $_GET['selection']; ?>";
 	if(!php_selection){php_selection=1;};
 	var select_ID;
 	//console.log(selection);
@@ -512,10 +512,10 @@ labels.append("line")
 	});		
 	
 		
-	labels.append("image")
-.attr("xlink:href",function(d){return "./"+d.upload_path;})
-	.attr("width",function(d){if(d.upload!=""){return 20;}else{return 0;}})
-	.attr("height",function(d){if(d.upload!=""){var s = d.imgW/20; return d.imgH/s;}else{return 0;}})
+	/*labels.append("image")
+.attr("xlink:href",function(d){if(d.upload!=[]){return "./"+d.upload_path[0];}})
+	.attr("width",function(d){if(d.upload!=[]){return 20;}else{return 0;}})
+	.attr("height",function(d){if(d.upload!=[]){var s = d.imgW[0]/20; return d.imgH[0]/s;}else{return 0;}})
 	.attr("transform",function(d,i){
 		var t = Math.floor(i/2)%4;
 		var xx = x(d.date)-7.5;
@@ -527,7 +527,7 @@ labels.append("line")
 	.attr("class","imgIcon")
 	.on("mouseover",function(d){d3.select("#flnode"+d.ind).dispatch("mouseover");})
   	.on("mouseout",function(d){d3.select("#flnode"+d.ind).dispatch("mouseout");})
-  	.on("click",function(d){d3.select("#flnode"+d.ind).dispatch("click");});
+  	.on("click",function(d){d3.select("#flnode"+d.ind).dispatch("click");});*/
 	
 	
 	labels.append("rect")
@@ -645,16 +645,29 @@ function initText(){
   var nw = 650;
   var nh = 500;
   
-  var notesvg = noteText.append("svg")
-  .attr("width",function(d){if(d.upload!=""){return nw;}else{return 0;}})
-  .attr("height",function(d){if(d.upload!=""){return nh;}else{return 0;}});
+  var ar = ["dog"];
+  console.log(ar);
+  
+  var notesvg = noteText.selectAll("svg")
+  .data(function(d){console.log(JSON.parse(d.upload));return JSON.parse(d.upload);})//unction(d){ console.log(d.upload); return d.; /*&& d.upload.filter(function(e,i){return d.upload_type[i].indexOf("image")!=-1; })*/;})
+  .enter()
+  .append("svg")
+  .attr("width",nw)
+  .attr("height",nh);
+ // .attr("width",function(d,i){if(d.upload!=""){return nw;}else{return 0;}})
+ // .attr("height",function(d,i){if(d.upload!=""){return nh;}else{return 0;}});
   
   notesvg.append("image")
+ .attr("xlink:href",function(d){console.log(d.path); return "./"+d.path;})
+ .attr("width",function(d,i){var s = d.imgW/nw; return d.imgW/s;})
+  .attr("height",function(d,i){var s = d.imgW/nw; return d.imgH/s;});
+  }
+  
+ /* notesvg.append("image")
   .attr("xlink:href",function(d){if(d.upload!=""){return "./"+d.upload_path;}})
   .attr("width",function(d){if(d.upload!=""){ var s = d.imgW/nw; return d.imgW/s;}else{return 0;}})
   .attr("height",function(d){if(d.upload!=""){var s = d.imgW/nw; return d.imgH/s;}else{return 0;}});
-  	  
-	}
+  }*/
 	
   function mouseOverNode(d,i){
 	  d3.select(this).attr("r",6).attr();

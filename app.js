@@ -18,6 +18,7 @@ var storage = multer.diskStorage({
 
 var upload = multer({ storage: storage });
 var sizeOf = require('image-size');
+var pID = 1;
 
 var connection = mysql.createConnection({
   host     : 'localhost',
@@ -39,20 +40,21 @@ app.get('/', function(req, res){
   var moment = req.timestamp;	
   //console.log(moment.tz("America/Boise").format());
   connection.query('SELECT * FROM _projects;SELECT * FROM _fieldnotes', function(err, rows){
-	 // console.log(rows);
-    res.render('timeline',{projects:rows[0],fieldnotes:rows[1], timestmp:moment.tz("America/Boise").format()});
+	console.log(rows);
+    res.render('timeline',{projects:rows[0],fieldnotes:rows[1], timestmp:moment.tz("America/Boise").format(), projectID:pID});
   });
 });
 
 
 app.post('/submit', upload.array('upload'), function(req, res, next){
 	console.log("submitted");
-	var fname="";
-	var fpath="";
-	var ftype="";
-	var _imgW="";
-	var _imgH="";
-	if(req.files.length!=0){
+	console.log(req.files);
+	var fname=[];
+	var fpath=[];
+	var ftype=[];
+	var _imgW=[];
+	var _imgH=[];
+	/*if(req.files.length!=0){
 		console.log(req.files);
 		fname=req.files[0].originalname;
 		fpath=req.files[0].path;
@@ -60,21 +62,38 @@ app.post('/submit', upload.array('upload'), function(req, res, next){
 		var dims = sizeOf(req.files[0].path);
 		var _imgW=dims.width;
 		var _imgH=dims.height;
-	}
+	}*/
+		var uploads = [];
+		for(i in req.files){
+			console.log(req.files[i]);
+			fname.push(req.files[i].originalname);
+			fpath.push(req.files[i].path.replace("public/",""));
+			ftype.push(req.files[i].mimetype);
+			var dims = sizeOf(req.files[i].path);
+			uploads.push("{\"name\":\""+req.files[i].originalname+"\",\"path\":\""+req.files[i].path.replace("public/","")+"\",\"type\":\""+req.files[i].mimetype+"\",\"imgW\":\""+dims.width+"\",\"imgH\":\""+dims.height+"\"}");
+		}	
+		
+		console.log("objects");
+		console.log(uploads);
+		console.log("end objects");
+		console.log(fpath);
 	
-	var note = 
+	var note =
 	{timestmp:req.body.timestmp,
 		fieldnote:req.body.fieldnote,
-		upload:fname,
-		upload_path:fpath.replace("public/",""),
-		upload_type:ftype,
-		imgW:_imgW,
-		imgH:_imgH,
+		upload:"["+uploads+"]",
+		upload_path:"",
+		upload_type:"",
+		imgW:"",
+		imgH:"",
 		keywords:req.body.keywords,
 		projectID:req.body.projID,
 		tag:req.body.tag
 	}
 	
+	pID = req.body.projID;
+	
+	console.log(note);
 	console.log(req.body);
 	connection.query('INSERT INTO _fieldnotes SET ?', note, function(err,res){
 		if(err)throw err;
