@@ -109,6 +109,9 @@ app.post('/newproj', upload.single(), function(req, res){
 		if(err)throw err;
 		console.log("new project created");
 	});
+	
+	pID = req.body.projID;
+	
 	res.redirect('/');
 });
 
