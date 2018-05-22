@@ -34,6 +34,12 @@
 	.ldivs{
 		background:white;
 	}
+	
+	#backup{
+		width:160px;
+		height:20px;
+		float:right;
+	}
 
 	#form{
 		width:300px;
@@ -55,6 +61,8 @@
 		color:steelblue;
 		margin-top:5px;
 		margin-left:5px;
+		float:left;
+		width:100%;
 	}
 	#vis {
 		float:left;
@@ -159,6 +167,11 @@
 <body>	
 <div id="header"><h3> FIELD NOTES </h3>	
 
+<div id="backup">
+	<form action="/backup" method="post">
+		<button>backup</button>
+	</form>
+</div>
 <div id="newproject">
 	<select id=projects></select>
 	<form action="/newproj" method="post" enctype="multipart/form-data">
@@ -202,7 +215,7 @@ tag:<input type="text" name="tag"><br>
 
 
 <script>
-	
+		
 	var dropdown = d3.select("#projects");	
 	var php_selection = <%- JSON.stringify(projectID) %>;//"<?php echo $_GET['selection']; ?>";
 	if(!php_selection){php_selection=1;};

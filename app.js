@@ -4,8 +4,7 @@ var mysql = require('mysql');
 var app = express();
 var time = require('express-timestamp');
 var multer  = require('multer');
-
-
+var fs = require('fs');
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -40,7 +39,7 @@ app.get('/', function(req, res){
   var moment = req.timestamp;	
   //console.log(moment.tz("America/Boise").format());
   connection.query('SELECT * FROM _projects;SELECT * FROM _fieldnotes', function(err, rows){
-	console.log(rows);
+	//console.log(rows);
     res.render('timeline',{projects:rows[0],fieldnotes:rows[1], timestmp:moment.tz("America/Boise").format(), projectID:pID});
   });
 });
@@ -111,6 +110,23 @@ app.post('/newproj', upload.single(), function(req, res){
 	});
 	
 	pID = req.body.projID;
+	
+	res.redirect('/');
+});
+
+app.post('/backup', function(req, res){
+	console.log("new backup");
+	
+    var moment = req.timestamp;	
+    //console.log(moment.tz("America/Boise").format());
+    connection.query('SELECT * FROM _projects;SELECT * FROM _fieldnotes', function(err, rows){
+	var bk = JSON.stringify(rows)
+	//write backup to backupfolder
+	fs.writeFile('public/backups/'+moment.tz("America/Boise").format()+'.txt', bk, function (err) {
+	  if (err) return console.log(err);
+	  console.log('backup successfully created!');
+	});
+});
 	
 	res.redirect('/');
 });
