@@ -35,6 +35,10 @@
 		background:white;
 	}
 	
+	#edit{
+		float:right;
+	}
+	
 	#backup{
 		width:160px;
 		height:20px;
@@ -62,7 +66,7 @@
 		margin-top:5px;
 		margin-left:5px;
 		float:left;
-		width:100%;
+		width:1100px;
 	}
 	#vis {
 		float:left;
@@ -92,14 +96,34 @@
 	
 	}
 	#note{
-		float:left;
+		position:absolute;
+		margin-left:325px;
+		margin-top:265px;
 		width:670px;
 		height:390px;
-		margin:5px;
 		word-wrap: break-word;
 	}
 
 	#note.text{
+		padding:10px;
+	}
+	
+	#updatenote{
+		position:absolute;
+		background:rgba(100,100,100,0.8);
+		margin-left:325px;
+		margin-top:250px;
+		width:670px;
+		height:370px;
+		font-size:11px;
+		font-family:sans-serif;
+	}
+	
+	#updateform{
+		margin:15px;
+		width:620px;
+		height:320px;
+		background:white;
 		padding:10px;
 	}
 
@@ -116,9 +140,9 @@
 		float:left;
 		position:absolute;
 		background:white;
-		width:600px;
-		height:300px;
-		padding:5px;
+		width:650px;
+		height:335px;
+		padding:10px;
 		font-size:11px;
 		font-family:sans-serif;
 		color:black;
@@ -196,7 +220,6 @@ artifact:
  </div>
  <div class="formdiv"> 
 keywords:<input type="text" name="keywords"><br>
-tag:<input type="text" name="tag"><br>
 <input type="hidden" name="projID" id="projID" value=""><br><br>	 
 <input type="submit" value="Submit"><br>
 </form>
@@ -207,6 +230,27 @@ tag:<input type="text" name="tag"><br>
 	<div id="timeline"></div>
 </div>
 <div id="note"></div>
+<div id="updatenote">
+	<div id="updateform">
+	<form action="/updatenote" method="post" enctype="multipart/form-data">
+	<div class="updateformdiv"><div class="updateformdiv" id="tmstmpTXT"></div>
+	<input type="hidden" id="tmstmp" name="timestmp" value=""> 
+	  keywords:<input type="text" name="keywords" id="keywords"><br>
+	fieldnote:<br><textarea id="fieldnote" name="fieldnote" rows="13" cols="85"></textarea><br>
+	</div>
+	<div class="updateformdiv" id="current_files"></div>
+	<div class="updateformdiv">
+	replace artifact(s):
+	  <input type="file" name="upload" id="upload" multiple><br><br>
+	 </div>
+	 <div class="updateformdiv"> 
+	<input type="hidden" name="projID" id="projID" value=""><br><br>
+	<input type="hidden" name="curr_uploads" id="curr_uploads" value=""><br><br>
+	<input type="button" name="cancel" id="cancel" value="cancel">	 
+	<input type="submit" value="update"><br>
+	</form>
+	</div>
+</div>
 </div>
 
 
@@ -215,6 +259,11 @@ tag:<input type="text" name="tag"><br>
 
 
 <script>
+	
+	//set opacity of updatenote
+	d3.select("#updatenote").style("opacity",0);
+	d3.select("#updatenote").style("pointer-events","none");
+	
 		
 	var dropdown = d3.select("#projects");	
 	var php_selection = <%- JSON.stringify(projectID) %>;//"<?php echo $_GET['selection']; ?>";
@@ -308,14 +357,22 @@ var svg = d3.select("#timeline").append("svg")
 			//var parseTime = d3.timeParse("%Y-%m-%d %H:%M:%S");
 			
 			var parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
+			var formatTimestamp = d3.timeFormat("%Y-%m-%d %H:%M:%S");
 			
 			var ptime = parseTime(tmstmp);
 			d3.select("#tmstmp").property("value",tmstmp);
 			
+			
+			
 		    data.forEach(function(d,i) {
+				//console.log(d.timestmp);
+				//console.log(parseTime(d.timestmp));
+				
 		        d.date = parseTime(d.timestmp);
 		        d.close = 100;
 				d.ind = i;
+				
+				//console.log(formatTimestamp(d.date));
 		    });	
 			
 			 var projs = d3.nest()
@@ -602,7 +659,18 @@ function initText(){
   .attr("id",function(d,i){return "flnote"+d.ind;})
   .attr("overflow","scroll")
   		.attr("selected",0)
-		.style("opacity",0); 		
+  		.style("opacity",0); 
+		
+ /*var edit = nodeText.append("form")
+		.attr("action", "/edit")
+		.attr("method", "post");*/
+		
+		var edit = noteText.append("button")
+		.attr("id","edit")
+		.text("edit")
+		.on("click",function(d,i){
+			updatenote(d,i);
+		});						
 	  	  
  noteText.append("text")
 	  .attr("id",function(d,i){return "date"+i;})
@@ -612,7 +680,7 @@ function initText(){
   .attr("y",20)
   .attr("font-family", "sans-serif")
    	  .attr("font-size", "11px")
-   	  .attr("fill", "black");  
+		.attr("fill", "black");  
 	  
 	  
 	  noteText.append("text")
@@ -622,7 +690,7 @@ function initText(){
 	 // .attr("y",20)
 	  .attr("font-family", "sans-serif")
 	  .attr("font-size", "11px")
-	  .attr("fill", "black");
+		.attr("fill", "black");
 	  
 	  
 	 noteText.append("text")  
@@ -685,13 +753,14 @@ function initText(){
   function mouseOverNode(d,i){
 	  d3.select(this).attr("r",6).attr();
 	  d3.select("#flnote"+d.ind).style("opacity",1);
-	  
+	  d3.select("#flnote"+d.ind).moveToFront();
   }
   
   function mouseOutNode(d,i){	  
 	  if(d3.select("#flnote"+d.ind).attr("selected")!=1){
 	  d3.select(this).attr("r",4);
 	  d3.select("#flnote"+d.ind).style("opacity",0);
+	  d3.select("#flnote"+d.ind).moveToBack();
   	  }
   }
   
@@ -707,11 +776,55 @@ function initText(){
 	  	d3.select("#flnote"+d.ind).attr("selected",1);
 		d3.select(this).attr("r",6).attr();
 		d3.select("#flnote"+d.ind).style("opacity",1);
+		d3.select("#flnote"+d.ind).moveToFront();
 	  }else{
 	  	d3.select("#flnote"+d.ind).attr("selected",0);
 		d3.select(this).attr("r",4).attr();
 		d3.select("#flnote"+d.ind).style("opacity",1);
 	  }
+  }
+  
+  function updatenote(dat,ind){
+	  console.log(dat);
+	  
+		var parseTime = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
+		var formatTimestamp = d3.timeFormat("%Y-%m-%d %H:%M:%S");
+		
+		var ptime = formatTimestamp(parseTime(dat.timestmp));
+	  
+	  //d3.select("#updatenote").moveToFront();
+	  d3.select("#updatenote").style("opacity",1);
+	  d3.select("#updatenote").style("pointer-events","all");
+	  d3.select("#updatenote").select("#tmstmpTXT").text("timestamp: "+dat.timestmp);
+	  d3.select("#updatenote").select("#tmstmp").property("value",ptime);
+	  d3.select("#updatenote").select("#keywords").property("value",dat.keywords);
+	  d3.select("#updatenote").select("#fieldnote").property("value",dat.fieldnote);
+	  d3.select("#updatenote").select("#curr_uploads").property("value",dat.upload);
+	  d3.select("#updatenote").select("#projID").property("value",dat.projectID);
+	  d3.select("#updatenote").select("#current_files").html(function(){
+		  var fs = JSON.parse(dat.upload);
+		  var text = "current artifact(s): ";
+		  fs.forEach(function(e,i){
+			  text += "- "+e.name+"<br>";
+	  	});
+		return text;	  
+	});
+	
+	d3.select("#updatenote").select("#cancel").on("click",function(){
+  	  d3.select("#updatenote").style("opacity",0);
+  	  d3.select("#updatenote").style("pointer-events","none");
+	});
+	
+	  /*.text(function(){
+		  var fs = JSON.parse(dat.upload);
+		  fs.forEach(function(e,i){console.log(e.name); return e.name;});
+	  });*/
+	 // d3.select("#updatenote").select("#upload").property("value",dat.upload);
+	  
+	  
+	  /*var update = d3.select("#flnote"+dat.ind).append("div")
+	  .attr("class","formview");*/
+	  
   }
   
   
@@ -773,6 +886,21 @@ function initText(){
         }
 
 //});
+
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+
+d3.selection.prototype.moveToBack = function() {  
+        return this.each(function() { 
+            var firstChild = this.parentNode.firstChild; 
+            if (firstChild) { 
+                this.parentNode.insertBefore(this, firstChild); 
+            } 
+        });
+    };
 
 </script>
 </body>

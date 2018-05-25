@@ -87,7 +87,7 @@ app.post('/submit', upload.array('upload'), function(req, res, next){
 		imgH:"",
 		keywords:req.body.keywords,
 		projectID:req.body.projID,
-		tag:req.body.tag
+		tag:""
 	}
 	
 	pID = req.body.projID;
@@ -130,6 +130,68 @@ app.post('/backup', function(req, res){
 	
 	res.redirect('/');
 });
+
+
+app.post('/updatenote', upload.array('upload'), function(req, res, next){
+	console.log("updated record");
+	console.log(req.files);
+	var fname=[];
+	var fpath=[];
+	var ftype=[];
+	var _imgW=[];
+	var _imgH=[];
+		
+		var new_uploads = [];
+		for(i in req.files){
+			console.log(req.files[i]);
+			fname.push(req.files[i].originalname);
+			fpath.push(req.files[i].path.replace("public/",""));
+			ftype.push(req.files[i].mimetype);
+			var dims = sizeOf(req.files[i].path);
+			new_uploads.push("{\"name\":\""+req.files[i].originalname+"\",\"path\":\""+req.files[i].path.replace("public/","")+"\",\"type\":\""+req.files[i].mimetype+"\",\"imgW\":\""+dims.width+"\",\"imgH\":\""+dims.height+"\"}");
+		}	
+		
+		var uploads;
+		if(new_uploads.length > 0){
+			uploads = new_uploads;
+			
+		}else{
+			uploads = req.body.curr_uploads.replace("[","").replace("]","");
+		}
+		
+		console.log("objects");
+		console.log(uploads);
+		console.log("end objects");
+		console.log(fpath);
+		
+		console.log("now:"+req.body.curr_uploads);
+		
+		console.log(req.body.timestmp);
+	
+	var note =
+	{timestmp:req.body.timestmp,
+		fieldnote:req.body.fieldnote,
+		upload:"["+uploads+"]",
+		upload_path:"",
+		upload_type:"",
+		imgW:"",
+		imgH:"",
+		keywords:req.body.keywords,
+		projectID:req.body.projID,
+		tag:""
+	}
+	
+	pID = req.body.projID;
+	
+	console.log(note);
+	console.log(req.body);
+	var sql = 'UPDATE _fieldnotes SET ? WHERE timestmp= ?';
+	connection.query(sql, [note,req.body.timestmp], function(err,res){
+		if(err)throw err;
+	});
+	res.redirect('/');
+});
+
 
 
 app.listen(app.get('port'));
